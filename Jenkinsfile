@@ -59,5 +59,24 @@ pipeline {
         }
       }
     }
+
+    stage('wait_for_testing') {
+      steps {
+        sh 'pwd; sleep 180; echo "Application Has been deployed on K8S"'
+      }
+    }
+
+    stage('Run DAST Using ZAP') {
+      steps {
+        withKubeConfig([credentialsId: 'kubelogin']) {
+          sh '''
+            ZAP_URL="http://$(kubectl get svc asgbuggy -n devsecops -o json | jq -r '.status.loadBalancer.ingress[0].hostname')"
+            echo "Running ZAP scan on $ZAP_URL"
+            zap.sh -cmd -quickurl $ZAP_URL -quickprogress -quickout ${WORKSPACE}/zap_report.html
+          '''
+          archiveArtifacts artifacts: 'zap_report.html'
+        }
+      }
+    }
   }
 }
