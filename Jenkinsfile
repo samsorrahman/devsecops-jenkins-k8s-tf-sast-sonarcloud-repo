@@ -1,7 +1,7 @@
 pipeline {
   agent any
   tools {
-    maven 'Maven_3_2_5'  // use this if it's already configured in Jenkins
+    maven 'Maven_3_2_5'
   }
   stages {
     stage('Compile and Run Sonar Analysis') {
@@ -15,11 +15,14 @@ pipeline {
         '''
       }
     }
-    stage('RunSCAAnalysisUsingSnyk') {
-            steps {		
-				withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
-					sh 'mvn snyk:test -fn'
-				}
-			}
+    stage('Run SCA Analysis Using Snyk') {
+      steps {
+        script {
+          withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
+            sh 'mvn snyk:test -fn'
+          }
+        }
+      }
+    }
   }
 }
