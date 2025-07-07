@@ -3,6 +3,11 @@ pipeline {
   tools {
     maven 'Maven_3_2_5'
   }
+
+  environment {
+    IMAGE_NAME = 'asg'
+  }
+
   stages {
     stage('Compile and Run Sonar Analysis') {
       steps {
@@ -15,11 +20,32 @@ pipeline {
         '''
       }
     }
+
     stage('Run SCA Analysis Using Snyk') {
       steps {
         script {
           withCredentials([string(credentialsId: 'SNYK_TOKEN', variable: 'SNYK_TOKEN')]) {
             sh 'mvn snyk:test -fn'
+          }
+        }
+      }
+    }
+
+    stage('Build Docker Image') {
+      steps {
+        script {
+          withDockerRegistry([credentialsId: 'dockerlogin', url: '']) {
+            app = docker.build("asg")
+          }
+        }
+      }
+    }
+
+    stage('Push Docker Image to ECR') {
+      steps {
+        script {
+          docker.withRegistry('https://619071321115.dkr.ecr.us-west-2.amazonaws.com', 'ecr:us-west-2:aws-credentials') {
+            app.push('latest')
           }
         }
       }
