@@ -66,17 +66,30 @@ pipeline {
       }
     }
 
-    stage('Run DAST Using ZAP') {
-      steps {
-        withKubeConfig([credentialsId: 'kubelogin']) {
-          sh '''
-            ZAP_URL="http://$(kubectl get svc asgbuggy -n devsecops -o json | jq -r '.status.loadBalancer.ingress[0].hostname')"
-            echo "Running ZAP scan on $ZAP_URL"
-            zap.sh -cmd -quickurl $ZAP_URL -quickprogress -quickout ${WORKSPACE}/zap_report.html
-          '''
-          archiveArtifacts artifacts: 'zap_report.html'
-        }
+
+      stage('Run DAST Using ZAP') {
+  steps {
+    withKubeConfig([credentialsId: 'kubelogin']) {
+      script {
+        def zapTarget = sh(
+          script: "kubectl get svc asgbuggy -n devsecops -o json | jq -r '.status.loadBalancer.ingress[0].hostname'",
+          returnStdout: true
+        ).trim()
+
+        echo "Running ZAP scan on http://${zapTarget}"
+
+        sh """
+          docker run --rm -v ${WORKSPACE}:/zap/wrk \
+            owasp/zap2docker-stable zap-baseline.py \
+            -t http://${zapTarget} \
+            -r zap_report.html
+        """
+        archiveArtifacts artifacts: 'zap_report.html'
       }
+    }
+  }
+}
+
     }
   }
 }
