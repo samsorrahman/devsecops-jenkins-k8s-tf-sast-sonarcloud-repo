@@ -1,11 +1,11 @@
 pipeline {
   agent any
-  tools { 
-    maven 'Maven_3_5_2'  
+  tools {
+    maven 'Maven_3_2_5'  // use this if it's already configured in Jenkins
   }
   stages {
-    stage('CompileandRunSonarAnalysis') {
-      steps {	
+    stage('Compile and Run Sonar Analysis') {
+      steps {
         sh '''
           mvn clean verify sonar:sonar \
           -Dsonar.projectKey=samsorbuggywebapp \
@@ -14,6 +14,6 @@ pipeline {
           -Dsonar.token=baae1e3be609302a7c2d6368107cac510627c20a
         '''
       }
-    } 
+    }
   }
 }
